@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Maximize2, Monitor, Pause, PictureInPicture2, Play, RotateCcw, Volume1, Volume2, VolumeX } from "lucide-react";
 import { useStreamify } from "@/hooks/use-streamify";
-import { clamp, cn, formatDuration } from "@/lib/utils";
+import { clamp, cn, formatDuration, formatPercent } from "@/lib/utils";
 
 const ReactPlayer = dynamic(() => import("react-player/lazy"), { ssr: false });
 
