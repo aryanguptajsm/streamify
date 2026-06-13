@@ -1,8 +1,8 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { buildVideoRecord, inferQualityOptions, isPublicMediaUrl, updateDurationLabel } from "@/lib/media";
-import type { AppSettings, PlaybackSpeed, PlayerSession, ThemeMode, VideoRecord } from "@/lib/types";
+import type { AppSettings, PlaybackSpeed, PlayerSession, VideoRecord } from "@/lib/types";
 import { clamp } from "@/lib/utils";
 import { useLocalStorageState } from "@/hooks/use-local-storage";
 import { useThemeClass } from "@/hooks/use-theme";
@@ -33,11 +33,11 @@ const defaultSession: PlayerSession = {
 
 export interface StreamifyContextValue {
   settings: AppSettings;
-  setSettings: ReturnType<typeof useState<AppSettings>>[1];
+  setSettings: Dispatch<SetStateAction<AppSettings>>;
   history: VideoRecord[];
   searchHistory: string[];
   current: PlayerSession;
-  setCurrent: ReturnType<typeof useState<PlayerSession>>[1];
+  setCurrent: Dispatch<SetStateAction<PlayerSession>>;
   recentActivity: VideoRecord[];
   openVideo: (url: string) => { ok: boolean; message?: string };
   toggleFavorite: (videoId: string) => void;
