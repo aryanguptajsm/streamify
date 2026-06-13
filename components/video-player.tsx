@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Maximize2, Monitor, Pause, PictureInPicture2, Play, RotateCcw, Volume1, Volume2, VolumeX } from "lucide-react";
 import { useStreamify } from "@/hooks/use-streamify";
 import { clamp, cn, formatDuration } from "@/lib/utils";
@@ -37,16 +37,16 @@ export function VideoPlayer() {
     return found?.label ?? "Auto";
   }, [current.quality, current.qualityOptions]);
 
-  function seekBy(seconds: number) {
+  const seekBy = useCallback((seconds: number) => {
     const player = playerRef.current;
     if (!player) return;
     const instance = player.getInternalPlayer?.();
     if (instance?.currentTime != null) {
       instance.currentTime = clamp(instance.currentTime + seconds, 0, duration || instance.duration || 0);
     }
-  }
+  }, [duration]);
 
-  function toggleFullscreen() {
+  const toggleFullscreen = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
 
@@ -57,14 +57,14 @@ export function VideoPlayer() {
     }
 
     setCurrent((state) => ({ ...state, isFullscreen: !document.fullscreenElement }));
-  }
+  }, [setCurrent]);
 
-  function enterPictureInPicture() {
+  const enterPictureInPicture = useCallback(() => {
     const player = playerRef.current?.getInternalPlayer?.();
     if (player?.requestPictureInPicture) {
       player.requestPictureInPicture().catch(() => undefined);
     }
-  }
+  }, []);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
