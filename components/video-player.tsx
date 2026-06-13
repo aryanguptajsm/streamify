@@ -195,7 +195,17 @@ export function VideoPlayer() {
 
           <div className="rounded-[28px] border border-white/10 bg-slate-950/50 p-4">
             <div className="flex items-center gap-3">
-              <button type="button" onClick={() => setMuted((value) => !value)} className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white">
+              <button
+                type="button"
+                onClick={() =>
+                  setMuted((value) => {
+                    const next = !value;
+                    setCurrent((state) => ({ ...state, muted: next, volume: next ? 0 : Math.max(volume, 0.35) }));
+                    return next;
+                  })
+                }
+                className="rounded-2xl border border-white/10 bg-white/5 p-3 text-white"
+              >
                 {muted || volume === 0 ? <VolumeX className="h-4 w-4" /> : volume > 0.5 ? <Volume2 className="h-4 w-4" /> : <Volume1 className="h-4 w-4" />}
               </button>
               <input
