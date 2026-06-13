@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { buildVideoRecord, inferQualityOptions, isPublicMediaUrl, updateDurationLabel } from "@/lib/media";
 import type { AppSettings, PlaybackSpeed, PlayerSession, VideoRecord } from "@/lib/types";
 import { clamp } from "@/lib/utils";
@@ -57,7 +57,7 @@ export interface StreamifyContextValue {
 
 const StreamifyContext = createContext<StreamifyContextValue | null>(null);
 
-export function StreamifyProvider({ children }: { children: React.ReactNode }) {
+export function StreamifyProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useLocalStorageState<AppSettings>("streamify.settings", defaultSettings);
   const [history, setHistory] = useLocalStorageState<VideoRecord[]>("streamify.history", []);
   const [searchHistory, setSearchHistory] = useLocalStorageState<string[]>("streamify.searchHistory", []);

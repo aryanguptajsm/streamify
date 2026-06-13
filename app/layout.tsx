@@ -4,6 +4,7 @@ import "./globals.css";
 import { AppShell } from "@/components/app-shell";
 import { ToastProvider } from "@/components/toast-provider";
 import { StreamifyProvider } from "@/hooks/use-streamify";
+import type { ReactNode } from "react";
 
 const bodyFont = Inter({
   subsets: ["latin"],
@@ -29,7 +30,7 @@ export const metadata: Metadata = {
   }
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className={`${bodyFont.variable} ${displayFont.variable} font-sans`}>

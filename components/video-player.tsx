@@ -70,6 +70,10 @@ export function VideoPlayer() {
   }, [current.playing, current.url]);
 
   const qualityOptions = useMemo(() => current.qualityOptions.filter((option) => option.available), [current.qualityOptions]);
+  const currentQualityLabel = useMemo(() => {
+    const found = current.qualityOptions.find((option) => option.value === current.quality);
+    return found?.label ?? "Auto";
+  }, [current.quality, current.qualityOptions]);
 
   function seekBy(seconds: number) {
     const player = playerRef.current;
@@ -303,7 +307,7 @@ export function VideoPlayer() {
                   onClick={() => setQualityMenu((value) => !value)}
                   className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white"
                 >
-                  {qualityOptions}
+                  {currentQualityLabel}
                   <RotateCcw className="h-4 w-4 text-slate-400" />
                 </button>
                 {qualityMenu ? (

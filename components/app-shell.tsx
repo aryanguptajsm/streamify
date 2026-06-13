@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { BarChart3, BookMarked, Home, Info, Settings2, PlaySquare, Sparkles, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { AnimatedBackground } from "@/components/animated-background";
 import { MiniPlayer } from "@/components/mini-player";
@@ -18,7 +18,7 @@ const navItems = [
   { href: "/about", label: "About", icon: Info }
 ];
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
