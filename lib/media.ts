@@ -79,6 +79,7 @@ export function buildVideoRecord(rawUrl: string, previous?: Partial<VideoRecord>
     favorite: previous?.favorite ?? false,
     views: previous?.views ?? 1,
     lastPosition: previous?.lastPosition ?? 0,
+    playbackSpeed: previous?.playbackSpeed ?? 1,
     qualityOptions: previous?.qualityOptions ?? qualityTemplate,
     searchTerms: previous?.searchTerms ?? []
   };

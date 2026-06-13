@@ -21,6 +21,7 @@ export interface VideoRecord {
   favorite: boolean;
   views: number;
   lastPosition: number;
+  playbackSpeed: number;
   qualityOptions: QualityOption[];
   searchTerms: string[];
 }
@@ -38,6 +39,7 @@ export interface PlayerSession {
   volume: number;
   speed: PlaybackSpeed;
   quality: string;
+  qualityOptions: QualityOption[];
   progress: number;
   isFullscreen: boolean;
 }

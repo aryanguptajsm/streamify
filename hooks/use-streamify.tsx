@@ -26,17 +26,18 @@ const defaultSession: PlayerSession = {
   volume: 0.78,
   speed: 1,
   quality: "auto",
+  qualityOptions: [{ label: "Auto", value: "auto", available: true }],
   progress: 0,
   isFullscreen: false
 };
 
 export interface StreamifyContextValue {
   settings: AppSettings;
-  setSettings: React.Dispatch<React.SetStateAction<AppSettings>>;
+  setSettings: ReturnType<typeof useState<AppSettings>>[1];
   history: VideoRecord[];
   searchHistory: string[];
   current: PlayerSession;
-  setCurrent: React.Dispatch<React.SetStateAction<PlayerSession>>;
+  setCurrent: ReturnType<typeof useState<PlayerSession>>[1];
   recentActivity: VideoRecord[];
   openVideo: (url: string) => { ok: boolean; message?: string };
   toggleFavorite: (videoId: string) => void;
@@ -93,7 +94,8 @@ export function StreamifyProvider({ children }: { children: React.ReactNode }) {
           watchedAt: new Date().toISOString(),
           views: existing.views + 1,
           favorite: existing.favorite,
-          searchTerms: existing.searchTerms
+          searchTerms: existing.searchTerms,
+          playbackSpeed: existing.playbackSpeed
         });
         updated.lastPosition = existing.lastPosition;
         updated.qualityOptions = existing.qualityOptions;
@@ -120,6 +122,7 @@ export function StreamifyProvider({ children }: { children: React.ReactNode }) {
       playing: settings.autoplay,
       speed: settings.defaultPlaybackSpeed,
       quality: record.qualityOptions[0]?.value ?? "auto",
+      qualityOptions: record.qualityOptions,
       progress: 0
     }));
 
@@ -154,6 +157,16 @@ export function StreamifyProvider({ children }: { children: React.ReactNode }) {
         };
       })
     );
+
+    if (payload.url && payload.url === current.url) {
+      setCurrent((state) => ({
+        ...state,
+        title: payload.title ?? state.title,
+        thumbnail: payload.thumbnail ?? state.thumbnail,
+        sourceLabel: payload.sourceLabel ?? state.sourceLabel,
+        durationSeconds: payload.durationSeconds ?? state.durationSeconds
+      }));
+    }
   };
 
   const setProgress = (progress: number) => {
@@ -168,6 +181,9 @@ export function StreamifyProvider({ children }: { children: React.ReactNode }) {
   const setSpeed = (speed: PlaybackSpeed) => {
     setCurrent((state) => ({ ...state, speed }));
     setSettings((state) => ({ ...state, defaultPlaybackSpeed: speed }));
+    if (current.videoId) {
+      setHistory((items) => items.map((item) => (item.id === current.videoId ? { ...item, playbackSpeed: speed, updatedAt: new Date().toISOString() } : item)));
+    }
   };
 
   const clearHistory = () => {
@@ -198,6 +214,7 @@ export function StreamifyProvider({ children }: { children: React.ReactNode }) {
       sourceLabel: found.sourceLabel,
       durationSeconds: found.durationSeconds,
       quality: found.qualityOptions[0]?.value ?? "auto",
+      qualityOptions: found.qualityOptions,
       playing: settings.autoplay,
       autoplay: settings.autoplay,
       speed: settings.defaultPlaybackSpeed,
@@ -211,9 +228,9 @@ export function StreamifyProvider({ children }: { children: React.ReactNode }) {
     () => ({
       watchedCount: history.length,
       favoritesCount: history.filter((item) => item.favorite).length,
-      averageSpeed: history.length > 0 ? Number((history.reduce((acc, item) => acc + (item.lastPosition > 0 ? current.speed : 1), 0) / history.length).toFixed(2)) : 1
+      averageSpeed: history.length > 0 ? Number((history.reduce((acc, item) => acc + item.playbackSpeed, 0) / history.length).toFixed(2)) : settings.defaultPlaybackSpeed
     }),
-    [current.speed, history]
+    [history, settings.defaultPlaybackSpeed]
   );
 
   const value: StreamifyContextValue = {

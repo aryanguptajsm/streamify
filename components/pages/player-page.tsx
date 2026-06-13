@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle, History, WandSparkles } from "lucide-react";
+import type { ComponentType } from "react";
 import { UrlForm } from "@/components/url-form";
 import { VideoPlayer } from "@/components/video-player";
 import { useStreamify } from "@/hooks/use-streamify";
@@ -78,7 +79,7 @@ export function PlayerPage() {
   );
 }
 
-function HintChip({ icon: Icon, label }: { icon: React.ComponentType<{ className?: string }>; label: string }) {
+function HintChip({ icon: Icon, label }: { icon: ComponentType<{ className?: string }>; label: string }) {
   return (
     <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
       <Icon className="h-4 w-4 text-cyan-300" />

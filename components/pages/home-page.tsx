@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowRight, Sparkles, TrendingUp, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
+import type { ComponentType } from "react";
 import { StatCards } from "@/components/stat-cards";
 import { UrlForm } from "@/components/url-form";
 import { useStreamify } from "@/hooks/use-streamify";
@@ -157,7 +158,7 @@ function SignalRow({ label, value, accent }: { label: string; value: string; acc
   );
 }
 
-function FeatureChip({ icon: Icon, label }: { icon: React.ComponentType<{ className?: string }>; label: string }) {
+function FeatureChip({ icon: Icon, label }: { icon: ComponentType<{ className?: string }>; label: string }) {
   return (
     <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
       <Icon className="h-4 w-4 text-cyan-300" />

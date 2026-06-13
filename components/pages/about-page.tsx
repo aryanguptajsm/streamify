@@ -1,6 +1,7 @@
 "use client";
 
 import { ShieldCheck, Sparkles, Zap } from "lucide-react";
+import type { ComponentType } from "react";
 
 export function AboutPage() {
   return (
@@ -32,7 +33,7 @@ export function AboutPage() {
   );
 }
 
-function AboutCard({ icon: Icon, title, text }: { icon: React.ComponentType<{ className?: string }>; title: string; text: string }) {
+function AboutCard({ icon: Icon, title, text }: { icon: ComponentType<{ className?: string }>; title: string; text: string }) {
   return (
     <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
       <Icon className="h-5 w-5 text-cyan-300" />

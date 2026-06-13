@@ -41,7 +41,11 @@ export function VideoPlayer() {
       }
 
       if (event.key.toLowerCase() === "m") {
-        setMuted((value) => !value);
+        setMuted((value) => {
+          const next = !value;
+          setCurrent((state) => ({ ...state, muted: next, volume: next ? 0 : volume }));
+          return next;
+        });
       }
 
       if (event.key.toLowerCase() === "f") {
@@ -65,7 +69,7 @@ export function VideoPlayer() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [current.playing, current.url]);
 
-  const qualityOptions = useMemo(() => current.quality ? current.quality : "auto", [current.quality]);
+  const qualityOptions = useMemo(() => current.qualityOptions.filter((option) => option.available), [current.qualityOptions]);
 
   function seekBy(seconds: number) {
     const player = playerRef.current;
@@ -260,12 +264,12 @@ export function VideoPlayer() {
                 </button>
                 {speedMenu ? (
                   <div className="absolute left-0 right-0 top-[4.25rem] z-20 rounded-[24px] border border-white/10 bg-slate-950 p-2 shadow-premium">
-                    {[0.75, 1, 1.25, 1.5, 1.75, 2].map((speed) => (
-                      <button
-                        key={speed}
-                        type="button"
-                        onClick={() => {
-                          setSpeed(speed as never);
+                  {[0.75, 1, 1.25, 1.5, 1.75, 2].map((speed) => (
+                    <button
+                      key={speed}
+                      type="button"
+                      onClick={() => {
+                          setSpeed(speed as 0.75 | 1 | 1.25 | 1.5 | 1.75 | 2);
                           setSpeedMenu(false);
                         }}
                         className={cn(
@@ -294,19 +298,26 @@ export function VideoPlayer() {
                 </button>
                 {qualityMenu ? (
                   <div className="absolute left-0 right-0 top-[4.25rem] z-20 rounded-[24px] border border-white/10 bg-slate-950 p-2 shadow-premium">
-                    {current.quality === "auto" ? (
+                    {qualityOptions.length > 0 ? (
+                      qualityOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => {
+                            setCurrent((state) => ({ ...state, quality: option.value }));
+                            setQualityMenu(false);
+                          }}
+                          className={cn(
+                            "block w-full rounded-2xl px-4 py-3 text-left text-sm transition",
+                            current.quality === option.value ? "bg-cyan-500/20 text-cyan-200" : "text-slate-300 hover:bg-white/5"
+                          )}
+                        >
+                          {option.label}
+                        </button>
+                      ))
+                    ) : (
                       <div className="rounded-2xl px-4 py-3 text-sm text-slate-300">Auto detected from source when available</div>
-                    ) : null}
-                    {current.quality && current.quality !== "auto" ? (
-                      <button type="button" className="block w-full rounded-2xl px-4 py-3 text-left text-sm text-cyan-200">
-                        {current.quality}
-                      </button>
-                    ) : null}
-                    {current.quality === "auto" ? (
-                      <button type="button" className="block w-full rounded-2xl px-4 py-3 text-left text-sm text-cyan-200">
-                        Auto
-                      </button>
-                    ) : null}
+                    )}
                   </div>
                 ) : null}
               </div>
