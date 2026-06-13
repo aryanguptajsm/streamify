@@ -1,6 +1,6 @@
 "use client";
 
-import { ShieldCheck, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { useStreamify } from "@/hooks/use-streamify";
 import { useToast } from "@/components/toast-provider";
 import type { PlaybackSpeed, ThemeMode } from "@/lib/types";

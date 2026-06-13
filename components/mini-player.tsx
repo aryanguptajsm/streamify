@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Expand, Pause, Play, X } from "lucide-react";
 import Link from "next/link";
 import { useStreamify } from "@/hooks/use-streamify";
-import { cn, formatPercent } from "@/lib/utils";
+import { formatPercent } from "@/lib/utils";
 
 export function MiniPlayer() {
   const { current, setPlaying } = useStreamify();

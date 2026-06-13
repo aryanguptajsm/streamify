@@ -4,6 +4,8 @@
 
 :root {
   color-scheme: dark;
+  --font-body: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Space Grotesk", "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
 }
 
 html {

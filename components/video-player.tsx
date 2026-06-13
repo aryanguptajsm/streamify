@@ -5,14 +5,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Maximize2, Monitor, Pause, PictureInPicture2, Play, RotateCcw, Volume1, Volume2, VolumeX } from "lucide-react";
 import { useStreamify } from "@/hooks/use-streamify";
 import { clamp, cn, formatDuration } from "@/lib/utils";
-import type ReactPlayerType from "react-player";
 
 const ReactPlayer = dynamic(() => import("react-player/lazy"), { ssr: false });
+
+type ReactPlayerHandle = {
+  seekTo?: (value: number, type?: "seconds" | "fraction") => void;
+  getInternalPlayer?: () => HTMLVideoElement | null;
+};
 
 export function VideoPlayer() {
   const { current, setPlaying, setProgress, updatePlaybackMeta, setSpeed, setCurrent } = useStreamify();
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const playerRef = useRef<ReactPlayerType | null>(null);
+  const playerRef = useRef<ReactPlayerHandle | null>(null);
   const [duration, setDuration] = useState(current.durationSeconds ?? 0);
   const [played, setPlayed] = useState(current.progress);
   const [volume, setVolume] = useState(current.volume);
@@ -26,6 +30,41 @@ export function VideoPlayer() {
     setVolume(current.volume);
     setMuted(current.muted);
   }, [current.durationSeconds, current.muted, current.progress, current.volume, current.videoId]);
+
+  const qualityOptions = useMemo(() => current.qualityOptions.filter((option) => option.available), [current.qualityOptions]);
+  const currentQualityLabel = useMemo(() => {
+    const found = current.qualityOptions.find((option) => option.value === current.quality);
+    return found?.label ?? "Auto";
+  }, [current.quality, current.qualityOptions]);
+
+  function seekBy(seconds: number) {
+    const player = playerRef.current;
+    if (!player) return;
+    const instance = player.getInternalPlayer?.();
+    if (instance?.currentTime != null) {
+      instance.currentTime = clamp(instance.currentTime + seconds, 0, duration || instance.duration || 0);
+    }
+  }
+
+  function toggleFullscreen() {
+    const el = containerRef.current;
+    if (!el) return;
+
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => undefined);
+    } else {
+      el.requestFullscreen?.().catch(() => undefined);
+    }
+
+    setCurrent((state) => ({ ...state, isFullscreen: !document.fullscreenElement }));
+  }
+
+  function enterPictureInPicture() {
+    const player = playerRef.current?.getInternalPlayer?.();
+    if (player?.requestPictureInPicture) {
+      player.requestPictureInPicture().catch(() => undefined);
+    }
+  }
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -67,42 +106,7 @@ export function VideoPlayer() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [current.playing, current.url]);
-
-  const qualityOptions = useMemo(() => current.qualityOptions.filter((option) => option.available), [current.qualityOptions]);
-  const currentQualityLabel = useMemo(() => {
-    const found = current.qualityOptions.find((option) => option.value === current.quality);
-    return found?.label ?? "Auto";
-  }, [current.quality, current.qualityOptions]);
-
-  function seekBy(seconds: number) {
-    const player = playerRef.current;
-    if (!player) return;
-    const instance = (player as any).getInternalPlayer?.();
-    if (instance?.currentTime != null) {
-      instance.currentTime = clamp(instance.currentTime + seconds, 0, duration || instance.duration || 0);
-    }
-  }
-
-  function toggleFullscreen() {
-    const el = containerRef.current;
-    if (!el) return;
-
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch(() => undefined);
-    } else {
-      el.requestFullscreen?.().catch(() => undefined);
-    }
-
-    setCurrent((state) => ({ ...state, isFullscreen: !document.fullscreenElement }));
-  }
-
-  function enterPictureInPicture() {
-    const player = (playerRef.current as any)?.getInternalPlayer?.();
-    if (player?.requestPictureInPicture) {
-      player.requestPictureInPicture().catch(() => undefined);
-    }
-  }
+  }, [current.playing, current.url, enterPictureInPicture, seekBy, setCurrent, setPlaying, toggleFullscreen, volume]);
 
   function handleProgress(state: { played: number; playedSeconds: number }) {
     setPlayed(state.played);
