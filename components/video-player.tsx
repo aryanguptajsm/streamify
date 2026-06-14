@@ -1,28 +1,26 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Maximize2, Monitor, Pause, PictureInPicture2, Play, RotateCcw, Volume1, Volume2, VolumeX } from "lucide-react";
+import { Maximize2, Minimize2, Pause, Play, RotateCcw, Volume1, Volume2, VolumeX } from "lucide-react";
 import { useStreamify } from "@/hooks/use-streamify";
 import { clamp, cn, formatDuration, formatPercent } from "@/lib/utils";
-
-const ReactPlayer = dynamic(() => import("react-player/lazy"), { ssr: false });
-
-type ReactPlayerHandle = {
-  seekTo?: (value: number, type?: "seconds" | "fraction") => void;
-  getInternalPlayer?: () => HTMLVideoElement | null;
-};
 
 export function VideoPlayer() {
   const { current, setPlaying, setProgress, updatePlaybackMeta, setSpeed, setCurrent } = useStreamify();
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const playerRef = useRef<ReactPlayerHandle | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const [duration, setDuration] = useState(current.durationSeconds ?? 0);
   const [played, setPlayed] = useState(current.progress);
   const [volume, setVolume] = useState(current.volume);
   const [muted, setMuted] = useState(current.muted);
   const [speedMenu, setSpeedMenu] = useState(false);
-  const [qualityMenu, setQualityMenu] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     setDuration(current.durationSeconds ?? 0);
@@ -31,20 +29,17 @@ export function VideoPlayer() {
     setMuted(current.muted);
   }, [current.durationSeconds, current.muted, current.progress, current.volume, current.videoId]);
 
-  const qualityOptions = useMemo(() => current.qualityOptions.filter((option) => option.available), [current.qualityOptions]);
-  const currentQualityLabel = useMemo(() => {
-    const found = current.qualityOptions.find((option) => option.value === current.quality);
-    return found?.label ?? "Auto";
-  }, [current.quality, current.qualityOptions]);
-
-  const seekBy = useCallback((seconds: number) => {
-    const player = playerRef.current;
-    if (!player) return;
-    const instance = player.getInternalPlayer?.();
-    if (instance?.currentTime != null) {
-      instance.currentTime = clamp(instance.currentTime + seconds, 0, duration || instance.duration || 0);
+  const handleMouseMove = useCallback(() => {
+    setShowControls(true);
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
     }
-  }, [duration]);
+    if (current.playing && containerRef.current?.querySelector("video")) {
+      controlsTimeoutRef.current = setTimeout(() => {
+        setShowControls(false);
+      }, 3000);
+    }
+  }, [current.playing]);
 
   const toggleFullscreen = useCallback(() => {
     const el = containerRef.current;
@@ -91,28 +86,38 @@ export function VideoPlayer() {
         toggleFullscreen();
       }
 
-      if (event.key.toLowerCase() === "i") {
-        enterPictureInPicture();
-      }
-
       if (event.key === "ArrowRight") {
+        event.preventDefault();
         seekBy(10);
       }
 
       if (event.key === "ArrowLeft") {
+        event.preventDefault();
         seekBy(-10);
+      }
+
+      if (event.key === ">") {
+        event.preventDefault();
+        setSpeed((current.speed * 1.25) as any);
+      }
+
+      if (event.key === "<") {
+        event.preventDefault();
+        setSpeed((current.speed / 1.25) as any);
       }
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [current.playing, current.url, enterPictureInPicture, seekBy, setCurrent, setPlaying, toggleFullscreen, volume]);
+  }, [current.playing, current.url, current.speed, seekBy, setCurrent, setPlaying, toggleFullscreen, volume, setSpeed]);
 
-  function handleProgress(state: { played: number; playedSeconds: number }) {
-    setPlayed(state.played);
-    setProgress(state.played);
-    updatePlaybackMeta({ url: current.url, lastPosition: state.played });
-  }
+  useEffect(() => {
+    return () => {
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current);
+      }
+    };
+  }, []);
 
   if (!current.url) {
     return (

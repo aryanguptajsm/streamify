@@ -9,8 +9,13 @@ import { formatPercent } from "@/lib/utils";
 export function MiniPlayer() {
   const { current, setPlaying } = useStreamify();
   const [open, setOpen] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   const hasVideo = Boolean(current.url);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (hasVideo) {
@@ -20,7 +25,7 @@ export function MiniPlayer() {
 
   const progress = useMemo(() => formatPercent(current.progress || 0), [current.progress]);
 
-  if (!hasVideo || !open) {
+  if (!mounted || !hasVideo || !open) {
     return null;
   }
 
