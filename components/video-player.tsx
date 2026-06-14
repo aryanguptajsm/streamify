@@ -248,7 +248,7 @@ export function VideoPlayer() {
                 onChange={(event) => {
                   const next = Number(event.target.value);
                   setPlayed(next);
-                  playerRef.current?.seekTo(next, "fraction");
+                  playerRef.current?.seekTo?.(next, "fraction");
                 }}
                 className="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/10 accent-cyan-400"
               />
