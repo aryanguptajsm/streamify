@@ -1,22 +1,53 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Maximize2, Minimize2, Pause, Play, RotateCcw, Volume1, Volume2, VolumeX } from "lucide-react";
+import { Maximize2, Minimize2, Pause, Play, RotateCcw, Volume1, Volume2, VolumeX, Monitor, PictureInPicture2 } from "lucide-react";
 import { useStreamify } from "@/hooks/use-streamify";
 import { clamp, cn, formatDuration, formatPercent } from "@/lib/utils";
+import dynamic from "next/dynamic";
+import type ReactPlayerClass from "react-player";
+
+const ReactPlayer = dynamic(() => import("react-player"), { ssr: false });
 
 export function VideoPlayer() {
   const { current, setPlaying, setProgress, updatePlaybackMeta, setSpeed, setCurrent } = useStreamify();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const playerRef = useRef<ReactPlayerClass | null>(null);
   const [duration, setDuration] = useState(current.durationSeconds ?? 0);
   const [played, setPlayed] = useState(current.progress);
   const [volume, setVolume] = useState(current.volume);
   const [muted, setMuted] = useState(current.muted);
   const [speedMenu, setSpeedMenu] = useState(false);
+  const [qualityMenu, setQualityMenu] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const qualityOptions = current.qualityOptions || [];
+  const currentQualityLabel = useMemo(() => {
+    const matched = qualityOptions.find((opt) => opt.value === current.quality);
+    return matched ? matched.label : "Auto";
+  }, [current.quality, qualityOptions]);
+
+  const seekBy = useCallback((seconds: number) => {
+    if (!playerRef.current) return;
+    const currentTime = playerRef.current.getCurrentTime() || 0;
+    const durationVal = playerRef.current.getDuration() || 0;
+    const nextTime = clamp(currentTime + seconds, 0, durationVal);
+    playerRef.current.seekTo(nextTime, "seconds");
+    if (durationVal > 0) {
+      const nextProgress = nextTime / durationVal;
+      setPlayed(nextProgress);
+      setProgress(nextProgress);
+    }
+  }, [setProgress]);
+
+  const handleProgress = useCallback((state: { played: number }) => {
+    setPlayed(state.played);
+    setProgress(state.played);
+  }, [setProgress]);
+
 
   useEffect(() => {
     setMounted(true);
