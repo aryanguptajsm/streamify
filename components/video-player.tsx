@@ -1,18 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Maximize2, Minimize2, Pause, Play, RotateCcw, Volume1, Volume2, VolumeX, Monitor, PictureInPicture2 } from "lucide-react";
+import { Maximize2, Pause, Play, RotateCcw, Volume1, Volume2, VolumeX, Monitor, PictureInPicture2 } from "lucide-react";
 import { useStreamify } from "@/hooks/use-streamify";
 import { clamp, cn, formatDuration, formatPercent } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import type ReactPlayerClass from "react-player";
+import type { PlaybackSpeed } from "@/lib/types";
 
 const ReactPlayer = dynamic(() => import("react-player"), { ssr: false });
 
 export function VideoPlayer() {
   const { current, setPlaying, setProgress, updatePlaybackMeta, setSpeed, setCurrent } = useStreamify();
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
   const playerRef = useRef<ReactPlayerClass | null>(null);
   const [duration, setDuration] = useState(current.durationSeconds ?? 0);
   const [played, setPlayed] = useState(current.progress);
@@ -20,15 +20,13 @@ export function VideoPlayer() {
   const [muted, setMuted] = useState(current.muted);
   const [speedMenu, setSpeedMenu] = useState(false);
   const [qualityMenu, setQualityMenu] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const [showControls, setShowControls] = useState(true);
-  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const qualityOptions = current.qualityOptions || [];
   const currentQualityLabel = useMemo(() => {
-    const matched = qualityOptions.find((opt) => opt.value === current.quality);
+    const options = current.qualityOptions || [];
+    const matched = options.find((opt) => opt.value === current.quality);
     return matched ? matched.label : "Auto";
-  }, [current.quality, qualityOptions]);
+  }, [current.quality, current.qualityOptions]);
 
   const seekBy = useCallback((seconds: number) => {
     if (!playerRef.current) return;
@@ -48,29 +46,12 @@ export function VideoPlayer() {
     setProgress(state.played);
   }, [setProgress]);
 
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   useEffect(() => {
     setDuration(current.durationSeconds ?? 0);
     setPlayed(current.progress);
     setVolume(current.volume);
     setMuted(current.muted);
   }, [current.durationSeconds, current.muted, current.progress, current.volume, current.videoId]);
-
-  const handleMouseMove = useCallback(() => {
-    setShowControls(true);
-    if (controlsTimeoutRef.current) {
-      clearTimeout(controlsTimeoutRef.current);
-    }
-    if (current.playing && containerRef.current?.querySelector("video")) {
-      controlsTimeoutRef.current = setTimeout(() => {
-        setShowControls(false);
-      }, 3000);
-    }
-  }, [current.playing]);
 
   const toggleFullscreen = useCallback(() => {
     const el = containerRef.current;
@@ -129,26 +110,26 @@ export function VideoPlayer() {
 
       if (event.key === ">") {
         event.preventDefault();
-        setSpeed((current.speed * 1.25) as any);
+        const speeds: PlaybackSpeed[] = [0.75, 1, 1.25, 1.5, 1.75, 2];
+        const currentIndex = speeds.indexOf(current.speed);
+        if (currentIndex < speeds.length - 1) {
+          setSpeed(speeds[currentIndex + 1]);
+        }
       }
 
       if (event.key === "<") {
         event.preventDefault();
-        setSpeed((current.speed / 1.25) as any);
+        const speeds: PlaybackSpeed[] = [0.75, 1, 1.25, 1.5, 1.75, 2];
+        const currentIndex = speeds.indexOf(current.speed);
+        if (currentIndex > 0) {
+          setSpeed(speeds[currentIndex - 1]);
+        }
       }
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [current.playing, current.url, current.speed, seekBy, setCurrent, setPlaying, toggleFullscreen, volume, setSpeed]);
-
-  useEffect(() => {
-    return () => {
-      if (controlsTimeoutRef.current) {
-        clearTimeout(controlsTimeoutRef.current);
-      }
-    };
-  }, []);
 
   if (!current.url) {
     return (
