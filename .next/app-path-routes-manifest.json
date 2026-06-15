@@ -1,0 +1,9 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/page": "/",
+  "/player/page": "/player",
+  "/about/page": "/about",
+  "/settings/page": "/settings",
+  "/history/page": "/history",
+  "/favorites/page": "/favorites"
+}
