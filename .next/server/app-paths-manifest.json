@@ -1,9 +1,9 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/history/page": "app/history/page.js",
   "/page": "app/page.js",
   "/about/page": "app/about/page.js",
-  "/favorites/page": "app/favorites/page.js",
+  "/history/page": "app/history/page.js",
   "/player/page": "app/player/page.js",
-  "/settings/page": "app/settings/page.js"
+  "/settings/page": "app/settings/page.js",
+  "/favorites/page": "app/favorites/page.js"
 }
