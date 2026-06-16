@@ -52,7 +52,7 @@ export function VideoPlayer() {
   const updateTracks = useCallback(() => {
     if (!playerRef.current) return;
 
-    // 1. Check HLS.js tracks
+    // 1. Check HLS.js track
     const hls = playerRef.current.getInternalPlayer("hls");
     if (hls) {
       // Audio Tracks
@@ -489,11 +489,11 @@ export function VideoPlayer() {
                 </button>
                 {speedMenu ? (
                   <div className="absolute left-0 right-0 top-[4.25rem] z-20 rounded-[24px] border border-white/10 bg-slate-950 p-2 shadow-premium">
-                  {[0.75, 1, 1.25, 1.5, 1.75, 2].map((speed) => (
-                    <button
-                      key={speed}
-                      type="button"
-                      onClick={() => {
+                    {[0.75, 1, 1.25, 1.5, 1.75, 2].map((speed) => (
+                      <button
+                        key={speed}
+                        type="button"
+                        onClick={() => {
                           setSpeed(speed as 0.75 | 1 | 1.25 | 1.5 | 1.75 | 2);
                           setSpeedMenu(false);
                         }}
