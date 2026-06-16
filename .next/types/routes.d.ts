@@ -4,13 +4,18 @@
 type AppRoutes = "/"
 type PageRoutes = never
 type LayoutRoutes = "/"
-type RedirectRoutes = never
+type RedirectRoutes = "/about" | "/favorites" | "/history" | "/player" | "/settings"
 type RewriteRoutes = never
 type Routes = AppRoutes | PageRoutes | LayoutRoutes | RedirectRoutes | RewriteRoutes
 
 
 interface ParamMap {
   "/": {}
+  "/about": {}
+  "/favorites": {}
+  "/history": {}
+  "/player": {}
+  "/settings": {}
 }
 
 
