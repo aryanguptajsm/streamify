@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Maximize2, Pause, Play, RotateCcw, Volume1, Volume2, VolumeX, Settings, Type, Mic2, Activity, ArrowLeft } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Maximize2, Pause, Play, Volume1, Volume2, VolumeX, Settings, Type, Mic2, Activity, ArrowLeft } from "lucide-react";
 import { useStreamify } from "@/hooks/use-streamify";
 import { clamp, cn, formatDuration } from "@/lib/utils";
 import dynamic from "next/dynamic";
@@ -78,7 +78,7 @@ export function VideoPlayer() {
     const hls = playerRef.current.getInternalPlayer("hls");
     if (hls) {
       if (hls.audioTracks && hls.audioTracks.length > 1) {
-        const tracks = hls.audioTracks.map((t: any, idx: number) => ({
+        const tracks = hls.audioTracks.map((t: { name?: string; lang?: string }, idx: number) => ({
           id: idx,
           name: t.name || t.lang || `Track ${idx + 1}`,
           lang: t.lang || ""
@@ -90,7 +90,7 @@ export function VideoPlayer() {
       }
 
       if (hls.subtitleTracks && hls.subtitleTracks.length > 0) {
-        const tracks = hls.subtitleTracks.map((t: any, idx: number) => ({
+        const tracks = hls.subtitleTracks.map((t: { name?: string; lang?: string }, idx: number) => ({
           id: idx,
           label: t.name || t.lang || `Subtitle ${idx + 1}`,
           lang: t.lang || "",
@@ -129,7 +129,7 @@ export function VideoPlayer() {
     const video = playerRef.current.getInternalPlayer() as HTMLVideoElement | null;
     if (!video) return;
 
-    const nativeAudio = (video as any).audioTracks;
+    const nativeAudio = (video as HTMLVideoElement & { audioTracks?: { label?: string; language?: string; enabled?: boolean }[] }).audioTracks;
     if (nativeAudio && nativeAudio.length > 1) {
       const tracks = [];
       let selectedIdx = -1;
@@ -170,7 +170,7 @@ export function VideoPlayer() {
       return;
     }
     const video = playerRef.current.getInternalPlayer() as HTMLVideoElement | null;
-    const nativeAudio = video ? (video as any).audioTracks : null;
+    const nativeAudio = video ? (video as HTMLVideoElement & { audioTracks?: { enabled?: boolean }[] }).audioTracks : null;
     if (nativeAudio) {
       for (let i = 0; i < nativeAudio.length; i++) {
         nativeAudio[i].enabled = i === index;
@@ -355,7 +355,7 @@ export function VideoPlayer() {
       {/* Middle Click Area for Play/Pause */}
       <div 
         className="absolute inset-0 z-10" 
-        onClick={(e) => {
+        onClick={() => {
           if (activeMenu === "none") {
             setPlaying(!current.playing);
           }
@@ -476,7 +476,7 @@ export function VideoPlayer() {
                 <div className="absolute bottom-full right-0 mb-4 bg-black/95 border border-white/10 rounded-2xl py-2 min-w-[120px] overflow-hidden backdrop-blur-md shadow-2xl">
                   <div className="px-4 py-2 text-xs uppercase tracking-wider text-white/50 font-semibold border-b border-white/5 mb-1">Speed</div>
                   {[0.75, 1, 1.25, 1.5, 1.75, 2].map((speed) => (
-                    <button key={speed} onClick={() => { setSpeed(speed as any); setActiveMenu("none"); }} className={cn("w-full text-left px-4 py-2 text-sm hover:bg-white/10 transition", current.speed === speed ? "text-cyan-400 font-medium" : "text-white/90")}>
+                    <button key={speed} onClick={() => { setSpeed(speed as PlaybackSpeed); setActiveMenu("none"); }} className={cn("w-full text-left px-4 py-2 text-sm hover:bg-white/10 transition", current.speed === speed ? "text-cyan-400 font-medium" : "text-white/90")}>
                       {speed === 1 ? "Normal" : `${speed}x`}
                     </button>
                   ))}
