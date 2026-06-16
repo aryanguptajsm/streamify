@@ -690,6 +690,9 @@ video {
 .h-full {
   height: 100%;
 }
+.max-h-60 {
+  max-height: 15rem;
+}
 .min-h-\[420px\] {
   min-height: 420px;
 }
@@ -877,6 +880,9 @@ video {
 }
 .overflow-hidden {
   overflow: hidden;
+}
+.overflow-y-auto {
+  overflow-y: auto;
 }
 .truncate {
   overflow: hidden;
