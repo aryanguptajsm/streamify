@@ -16,11 +16,13 @@ function readStorage<T>(key: string, fallback: T) {
 }
 
 export function useLocalStorageState<T>(key: string, fallback: T) {
-  const [value, setValue] = useState<T>(() => readStorage(key, fallback));
+  const [value, setValue] = useState<T>(fallback);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    setValue(readStorage(key, fallback));
     setHydrated(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
