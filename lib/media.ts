@@ -66,9 +66,17 @@ export function buildVideoRecord(rawUrl: string, previous?: Partial<VideoRecord>
   const title = guessTitle(parsed);
   const thumbnail = youtubeThumbnail(parsed);
 
+  // If the video is an MKV or AVI (formats not natively supported by browsers),
+  // route it through our new real-time transcoder API.
+  let finalUrl = parsed.toString();
+  if (finalUrl.toLowerCase().endsWith(".mkv") || finalUrl.toLowerCase().endsWith(".avi")) {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    finalUrl = `${origin}/api/transcode?url=${encodeURIComponent(finalUrl)}`;
+  }
+
   return {
     id: previous?.id ?? createId("video"),
-    url: parsed.toString(),
+    url: finalUrl,
     title: previous?.title ?? title,
     thumbnail: previous?.thumbnail ?? thumbnail,
     sourceLabel: previous?.sourceLabel ?? sourceLabel(parsed),
