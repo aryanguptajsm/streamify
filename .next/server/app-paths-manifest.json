@@ -1,8 +1,1 @@
-{
-<<<<<<< HEAD
-=======
-  "/api/check-url/route": "app/api/check-url/route.js",
-  "/_not-found/page": "app/_not-found/page.js",
->>>>>>> 9a11eceedd14e8328bac75c5bda3dff6a435679c
-  "/page": "app/page.js"
-}
+{}
