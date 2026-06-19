@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 "use client";
 
+=======
+>>>>>>> 9a11eceedd14e8328bac75c5bda3dff6a435679c
 import { useRef, useEffect, useState } from 'react';
 import { Renderer, Program, Triangle, Mesh } from 'ogl';
 
@@ -93,6 +96,7 @@ export const SideRays = ({
 
             if (!containerRef.current) return;
 
+<<<<<<< HEAD
             try {
                 const renderer = new Renderer({
                     dpr: Math.min(window.devicePixelRatio, 2),
@@ -110,12 +114,34 @@ export const SideRays = ({
                 containerRef.current.appendChild(gl.canvas);
 
                 const vert = `
+=======
+            const renderer = new Renderer({
+                dpr: Math.min(window.devicePixelRatio, 2),
+                alpha: true
+            });
+            rendererRef.current = renderer;
+
+            const gl = renderer.gl;
+            gl.canvas.style.width = '100%';
+            gl.canvas.style.height = '100%';
+
+            while (containerRef.current.firstChild) {
+                containerRef.current.removeChild(containerRef.current.firstChild);
+            }
+            containerRef.current.appendChild(gl.canvas);
+
+            const vert = `
+>>>>>>> 9a11eceedd14e8328bac75c5bda3dff6a435679c
 attribute vec2 position;
 void main() {
   gl_Position = vec4(position, 0.0, 1.0);
 }`;
 
+<<<<<<< HEAD
                 const frag = `precision highp float;
+=======
+            const frag = `precision highp float;
+>>>>>>> 9a11eceedd14e8328bac75c5bda3dff6a435679c
 
 uniform float iTime;
 uniform vec2 iResolution;
@@ -176,6 +202,7 @@ void main() {
   gl_FragColor = color;
 }`;
 
+<<<<<<< HEAD
                 const [flipX, flipY] = originToFlip(origin);
                 const uniforms = {
                     iTime: { value: 0 },
@@ -244,6 +271,73 @@ void main() {
             } catch (err) {
                 console.warn("WebGL/OGL initialization failed. Rendering fallback background.", err);
             }
+=======
+            const [flipX, flipY] = originToFlip(origin);
+            const uniforms = {
+                iTime: { value: 0 },
+                iResolution: { value: [1, 1] as number[] },
+                iSpeed: { value: speed },
+                iRayColor1: { value: hexToRgb(rayColor1) as number[] },
+                iRayColor2: { value: hexToRgb(rayColor2) as number[] },
+                iIntensity: { value: intensity },
+                iSpread: { value: spread },
+                iFlipX: { value: flipX },
+                iFlipY: { value: flipY },
+                iTilt: { value: tilt },
+                iSaturation: { value: saturation },
+                iBlend: { value: blend },
+                iFalloff: { value: falloff },
+                iOpacity: { value: opacity }
+            };
+            uniformsRef.current = uniforms;
+
+            const geometry = new Triangle(gl);
+            const program = new Program(gl, { vertex: vert, fragment: frag, uniforms });
+            const mesh = new Mesh(gl, { geometry, program });
+            meshRef.current = mesh;
+
+            const updateSize = () => {
+                if (!containerRef.current || !renderer) return;
+                renderer.dpr = Math.min(window.devicePixelRatio, 2);
+                const { clientWidth: w, clientHeight: h } = containerRef.current;
+                renderer.setSize(w, h);
+                uniforms.iResolution.value = [w * renderer.dpr, h * renderer.dpr];
+            };
+
+            const loop = (t: number) => {
+                if (!rendererRef.current || !uniformsRef.current || !meshRef.current) return;
+                uniforms.iTime.value = t * 0.001;
+                try {
+                    renderer.render({ scene: mesh });
+                    animationIdRef.current = requestAnimationFrame(loop);
+                } catch {
+                    return;
+                }
+            };
+
+            window.addEventListener('resize', updateSize);
+            updateSize();
+            animationIdRef.current = requestAnimationFrame(loop);
+
+            cleanupFunctionRef.current = () => {
+                if (animationIdRef.current) {
+                    cancelAnimationFrame(animationIdRef.current);
+                    animationIdRef.current = null;
+                }
+                window.removeEventListener('resize', updateSize);
+                if (renderer) {
+                    try {
+                        const loseCtx = renderer.gl.getExtension('WEBGL_lose_context');
+                        if (loseCtx) loseCtx.loseContext();
+                        const canvas = renderer.gl.canvas;
+                        if (canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas);
+                    } catch { }
+                }
+                rendererRef.current = null;
+                uniformsRef.current = null;
+                meshRef.current = null;
+            };
+>>>>>>> 9a11eceedd14e8328bac75c5bda3dff6a435679c
         };
 
         initializeWebGL();
