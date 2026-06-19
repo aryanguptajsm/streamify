@@ -108,19 +108,9 @@ export const SideRays = ({
                 }
                 containerRef.current.appendChild(gl.canvas);
 
-                const vert = `
-attribute vec2 position;
-void main() {
-  gl_Position = vec4(position, 0.0, 1.0);
-}`;
+                const vert = `attribute vec2 position;void main() {  gl_Position = vec4(position, 0.0, 1.0);}`;
 
-                const frag = `precision highp float;
-
-uniform float iTime;
-uniform vec2 iResolution;
-uniform float iSpeed;
-uniform vec3 iRayColor1;
-uniform vec3 iRayColor2;
+                const frag = `precision highp float;uniform float iTime;uniform vec2 iResolution;uniform float iSpeed;uniform vec3 iRayColor1;uniform vec3 iRayColor2;
 uniform float iIntensity;
 uniform float iSpread;
 uniform float iFlipX;
