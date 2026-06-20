@@ -538,6 +538,50 @@ export function VideoPlayer() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [current.playing, current.url, current.speed, seekBy, setCurrent, setPlaying, toggleFullscreen, volume, setSpeed, muted, activeMenu]);
 
+  // Sync volume and muted
+  useEffect(() => {
+    const video = nativeVideoRef.current;
+    if (video && isTranscoded) {
+      video.volume = volume;
+      video.muted = muted;
+    }
+  }, [volume, muted, isTranscoded]);
+
+  // Sync playback speed
+  useEffect(() => {
+    const video = nativeVideoRef.current;
+    if (video && isTranscoded) {
+      video.playbackRate = current.speed;
+    }
+  }, [current.speed, isTranscoded]);
+
+  // Sync playing state
+  useEffect(() => {
+    const video = nativeVideoRef.current;
+    if (!video || !isTranscoded) return;
+    if (current.playing) {
+      video.play().catch(() => {});
+    } else {
+      video.pause();
+    }
+  }, [current.playing, isTranscoded]);
+
+  // Manage MSE lifecycle
+  useEffect(() => {
+    if (!isTranscoded) {
+      cleanupMse();
+      return;
+    }
+
+    // Start from last position or 0
+    const startPos = current.progress * (current.durationSeconds ?? 0);
+    initMse(startPos);
+
+    return () => {
+      cleanupMse();
+    };
+  }, [current.url, isTranscoded, initMse, cleanupMse]);
+
   if (!current.url) return null;
 
   return (
