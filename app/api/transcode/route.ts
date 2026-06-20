@@ -6,6 +6,8 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const url = searchParams.get("url");
+    const startParam = searchParams.get("start") || "0";
+    const start = parseFloat(startParam);
 
     if (!url) {
       return new NextResponse("Missing url parameter", { status: 400 });
@@ -14,7 +16,14 @@ export async function GET(request: Request) {
     // PassThrough stream to capture FFmpeg output
     const passThrough = new PassThrough();
 
-    const command = ffmpeg(url)
+    const command = ffmpeg(url);
+
+    // Apply fast input seeking if a start position is specified
+    if (start > 0) {
+      command.seekInput(start);
+    }
+
+    command
       // Fallback/standard browser compatible video and audio codecs
       .videoCodec("libx264")
       .audioCodec("aac")
@@ -25,6 +34,8 @@ export async function GET(request: Request) {
         "-movflags frag_keyframe+empty_moov+default_base_moof",
         "-preset ultrafast",
         "-tune zerolatency",
+        "-pix_fmt yuv420p",
+        "-g 30",
       ])
       .format("mp4")
       .on("start", (commandLine) => {

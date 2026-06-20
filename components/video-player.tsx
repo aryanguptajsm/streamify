@@ -23,6 +23,14 @@ export function VideoPlayer() {
   const [activeMenu, setActiveMenu] = useState<"none" | "speed" | "quality" | "audio" | "subtitles">("none");
   const [showControls, setShowControls] = useState(true);
 
+  const isTranscoded = current.url.startsWith("/api/transcode") || current.url.includes("/api/transcode");
+  const nativeVideoRef = useRef<HTMLVideoElement | null>(null);
+  const mediaSourceRef = useRef<MediaSource | null>(null);
+  const sourceBufferRef = useRef<SourceBuffer | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [mseError, setMseError] = useState<string | null>(null);
+
   // Audio and Subtitle Track States
   const [audioTracks, setAudioTracks] = useState<{ id: number; name: string; lang: string }[]>([]);
   const [selectedAudioTrack, setSelectedAudioTrack] = useState<number>(-1);
@@ -194,18 +202,273 @@ export function VideoPlayer() {
     }
   }, []);
 
-  const seekBy = useCallback((seconds: number) => {
-    if (!playerRef.current) return;
-    const currentTime = playerRef.current.getCurrentTime() || 0;
-    const durationVal = playerRef.current.getDuration() || 0;
-    const nextTime = clamp(currentTime + seconds, 0, durationVal);
-    playerRef.current.seekTo(nextTime, "seconds");
-    if (durationVal > 0) {
-      const nextProgress = nextTime / durationVal;
-      setPlayed(nextProgress);
-      setProgress(nextProgress);
+  const cleanupMse = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
-  }, [setProgress]);
+    const video = nativeVideoRef.current;
+    if (video) {
+      video.pause();
+      try {
+        video.src = "";
+        video.load();
+      } catch (e) {}
+    }
+    mediaSourceRef.current = null;
+    sourceBufferRef.current = null;
+    setIsBuffering(false);
+    setMseError(null);
+  }, []);
+
+  const startStreaming = useCallback(async (
+    startSeconds: number,
+    sourceBuffer: SourceBuffer,
+    mediaSource: MediaSource,
+    signal: AbortSignal
+  ) => {
+    try {
+      setIsBuffering(true);
+      const url = `${current.url}&start=${startSeconds}`;
+      const response = await fetch(url, { signal });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("Failed to get stream reader from response");
+      }
+
+      const queue: Uint8Array[] = [];
+      let appending = false;
+
+      const processQueue = async () => {
+        if (appending || queue.length === 0 || signal.aborted) return;
+        if (mediaSource.readyState !== "open") return;
+
+        appending = true;
+        const chunk = queue.shift()!;
+
+        try {
+          if (sourceBuffer.updating) {
+            await new Promise<void>((resolve) => {
+              const onUpdateEnd = () => {
+                sourceBuffer.removeEventListener("updateend", onUpdateEnd);
+                resolve();
+              };
+              sourceBuffer.addEventListener("updateend", onUpdateEnd);
+            });
+          }
+          if (mediaSource.readyState === "open" && !signal.aborted) {
+            sourceBuffer.appendBuffer(chunk);
+          }
+        } catch (e) {
+          console.error("Error appending chunk to MSE:", e);
+        } finally {
+          appending = false;
+          processQueue();
+        }
+      };
+
+      while (!signal.aborted) {
+        // Backpressure throttling: pause reading if buffer is ahead > 45 seconds
+        const video = nativeVideoRef.current;
+        if (video) {
+          const buffered = sourceBuffer.buffered;
+          if (buffered.length > 0) {
+            const bufferedEnd = buffered.end(buffered.length - 1);
+            const currentTime = video.currentTime;
+            if (bufferedEnd - currentTime > 45) {
+              await new Promise((resolve) => setTimeout(resolve, 500));
+              continue;
+            }
+          }
+        }
+
+        const { done, value } = await reader.read();
+        if (done) {
+          while (queue.length > 0 || appending) {
+            await new Promise((r) => setTimeout(r, 50));
+          }
+          if (mediaSource.readyState === "open" && !sourceBuffer.updating) {
+            mediaSource.endOfStream();
+          }
+          setIsBuffering(false);
+          break;
+        }
+
+        if (value) {
+          queue.push(value);
+          setIsBuffering(false);
+          processQueue();
+        }
+      }
+    } catch (err: any) {
+      if (err.name === "AbortError") {
+        console.log("Fetch stream aborted successfully.");
+      } else {
+        console.error("Streaming error:", err);
+        setMseError("Streaming failed or connection lost.");
+        setIsBuffering(false);
+      }
+    }
+  }, [current.url]);
+
+  const initMse = useCallback((startSeconds: number) => {
+    cleanupMse();
+    const video = nativeVideoRef.current;
+    if (!video) return;
+
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    const mediaSource = new MediaSource();
+    mediaSourceRef.current = mediaSource;
+
+    video.src = URL.createObjectURL(mediaSource);
+
+    let isFetching = false;
+    const handleSourceOpen = () => {
+      if (isFetching) return;
+      isFetching = true;
+
+      let mimeCodec = 'video/mp4; codecs="avc1.64001f, mp4a.40.2"';
+      if (!MediaSource.isTypeSupported(mimeCodec)) {
+        mimeCodec = 'video/mp4; codecs="avc1.42E01E, mp4a.40.2"';
+        if (!MediaSource.isTypeSupported(mimeCodec)) {
+          mimeCodec = 'video/mp4';
+        }
+      }
+
+      try {
+        const sourceBuffer = mediaSource.addSourceBuffer(mimeCodec);
+        sourceBufferRef.current = sourceBuffer;
+
+        if (duration > 0) {
+          mediaSource.duration = duration;
+        } else if (current.durationSeconds) {
+          mediaSource.duration = current.durationSeconds;
+        }
+
+        if (startSeconds > 0) {
+          sourceBuffer.timestampOffset = startSeconds;
+        }
+
+        startStreaming(startSeconds, sourceBuffer, mediaSource, abortController.signal);
+      } catch (err) {
+        console.error("MSE SourceBuffer error:", err);
+        setMseError("Unsupported browser streaming format.");
+      }
+    };
+
+    mediaSource.addEventListener("sourceopen", handleSourceOpen);
+    return () => {
+      mediaSource.removeEventListener("sourceopen", handleSourceOpen);
+    };
+  }, [current.url, duration, current.durationSeconds, startStreaming, cleanupMse]);
+
+  const handleNativeSeek = useCallback((targetTime: number) => {
+    const video = nativeVideoRef.current;
+    if (!video) return;
+
+    const wasPlaying = current.playing;
+    if (wasPlaying) {
+      video.pause();
+    }
+    setIsBuffering(true);
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    const sourceBuffer = sourceBufferRef.current;
+    const mediaSource = mediaSourceRef.current;
+
+    if (sourceBuffer && mediaSource && mediaSource.readyState === "open") {
+      try {
+        sourceBuffer.abort();
+        const clearAndSeek = () => {
+          if (sourceBuffer.updating) {
+            sourceBuffer.addEventListener("updateend", () => {
+              try {
+                sourceBuffer.remove(0, mediaSource.duration);
+              } catch (e) {}
+            }, { once: true });
+          } else {
+            sourceBuffer.remove(0, mediaSource.duration);
+          }
+        };
+        if (sourceBuffer.buffered.length > 0) {
+          clearAndSeek();
+        }
+        sourceBuffer.timestampOffset = targetTime;
+      } catch (e) {
+        console.error("Error resetting source buffer for seek:", e);
+      }
+    }
+
+    video.currentTime = targetTime;
+
+    if (sourceBuffer && mediaSource) {
+      startStreaming(targetTime, sourceBuffer, mediaSource, abortController.signal)
+        .then(() => {
+          if (wasPlaying && nativeVideoRef.current) {
+            nativeVideoRef.current.play().catch(() => {});
+          }
+        });
+    }
+  }, [current.playing, duration, startStreaming]);
+
+  const handleNativePlay = () => {
+    setPlaying(true);
+  };
+
+  const handleNativePause = () => {
+    setPlaying(false);
+  };
+
+  const handleNativeTimeUpdate = () => {
+    const video = nativeVideoRef.current;
+    if (video && duration > 0) {
+      const currentPlayed = video.currentTime / duration;
+      setPlayed(currentPlayed);
+      setProgress(currentPlayed);
+    }
+  };
+
+  const handleNativeLoadedMetadata = () => {
+    const video = nativeVideoRef.current;
+    if (video) {
+      if (!duration && video.duration && video.duration !== Infinity && !isNaN(video.duration)) {
+        setDuration(video.duration);
+        updatePlaybackMeta({ url: current.url, durationSeconds: video.duration });
+      }
+    }
+  };
+
+  const seekBy = useCallback((seconds: number) => {
+    if (isTranscoded) {
+      const video = nativeVideoRef.current;
+      if (!video) return;
+      const currentTime = video.currentTime || 0;
+      const nextTime = clamp(currentTime + seconds, 0, duration);
+      handleNativeSeek(nextTime);
+    } else {
+      if (!playerRef.current) return;
+      const currentTime = playerRef.current.getCurrentTime() || 0;
+      const durationVal = playerRef.current.getDuration() || 0;
+      const nextTime = clamp(currentTime + seconds, 0, durationVal);
+      playerRef.current.seekTo(nextTime, "seconds");
+      if (durationVal > 0) {
+        const nextProgress = nextTime / durationVal;
+        setPlayed(nextProgress);
+        setProgress(nextProgress);
+      }
+    }
+  }, [isTranscoded, duration, handleNativeSeek, setProgress]);
 
   const handleProgress = useCallback((state: { played: number }) => {
     setPlayed(state.played);
