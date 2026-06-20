@@ -41,7 +41,7 @@ export async function GET(request: Request) {
       .on("start", (commandLine) => {
         console.log("Spawned Ffmpeg with command: " + commandLine);
       })
-      .on("error", (err, stdout, stderr) => {
+      .on("error", (err) => {
         console.error("FFmpeg error:", err.message);
         // Cleanly close the stream on error so the client isn't left hanging indefinitely
         passThrough.end();
@@ -60,14 +60,14 @@ export async function GET(request: Request) {
         passThrough.on("end", () => {
           try {
             controller.close();
-          } catch (e) {
+          } catch {
             // Ignore error if already closed
           }
         });
         passThrough.on("error", (err) => {
           try {
             controller.error(err);
-          } catch (e) {
+          } catch {
             // Ignore error if already closed
           }
         });

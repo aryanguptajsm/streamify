@@ -213,7 +213,7 @@ export function VideoPlayer() {
       try {
         video.src = "";
         video.load();
-      } catch (e) {}
+      } catch {}
     }
     mediaSourceRef.current = null;
     sourceBufferRef.current = null;
@@ -260,7 +260,7 @@ export function VideoPlayer() {
             });
           }
           if (mediaSource.readyState === "open" && !signal.aborted) {
-            sourceBuffer.appendBuffer(chunk as any);
+            sourceBuffer.appendBuffer(chunk as unknown as BufferSource);
           }
         } catch (e) {
           console.error("Error appending chunk to MSE:", e);
@@ -303,8 +303,9 @@ export function VideoPlayer() {
           processQueue();
         }
       }
-    } catch (err: any) {
-      if (err.name === "AbortError") {
+    } catch (err: unknown) {
+      const errName = err && typeof err === "object" && "name" in err ? (err as { name?: string }).name : undefined;
+      if (errName === "AbortError") {
         console.log("Fetch stream aborted successfully.");
       } else {
         console.error("Streaming error:", err);
@@ -365,7 +366,7 @@ export function VideoPlayer() {
     return () => {
       mediaSource.removeEventListener("sourceopen", handleSourceOpen);
     };
-  }, [current.url, duration, current.durationSeconds, startStreaming, cleanupMse]);
+  }, [duration, current.durationSeconds, startStreaming, cleanupMse]);
 
   const handleNativeSeek = useCallback((targetTime: number) => {
     const video = nativeVideoRef.current;
@@ -395,7 +396,7 @@ export function VideoPlayer() {
             sourceBuffer.addEventListener("updateend", () => {
               try {
                 sourceBuffer.remove(0, mediaSource.duration);
-              } catch (e) {}
+              } catch {}
             }, { once: true });
           } else {
             sourceBuffer.remove(0, mediaSource.duration);
@@ -420,7 +421,7 @@ export function VideoPlayer() {
           }
         });
     }
-  }, [current.playing, duration, startStreaming]);
+  }, [current.playing, startStreaming]);
 
   const handleNativePlay = () => {
     setPlaying(true);
@@ -580,6 +581,7 @@ export function VideoPlayer() {
     return () => {
       cleanupMse();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current.url, isTranscoded, initMse, cleanupMse]);
 
   if (!current.url) return null;
