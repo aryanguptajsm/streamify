@@ -260,7 +260,7 @@ export function VideoPlayer() {
             });
           }
           if (mediaSource.readyState === "open" && !signal.aborted) {
-            sourceBuffer.appendBuffer(chunk);
+            sourceBuffer.appendBuffer(chunk as any);
           }
         } catch (e) {
           console.error("Error appending chunk to MSE:", e);
@@ -596,49 +596,89 @@ export function VideoPlayer() {
       }}
     >
       <div className="absolute inset-0 z-0 flex items-center justify-center">
-        <ReactPlayer
-          ref={playerRef}
-          url={current.url}
-          playing={current.playing}
-          muted={muted}
-          volume={volume}
-          playbackRate={current.speed}
-          width="100%"
-          height="100%"
-          style={{ position: "absolute", inset: 0 }}
-          onPlay={() => {
-            setPlaying(true);
-            updateTracks();
-          }}
-          onPause={() => setPlaying(false)}
-          onProgress={handleProgress}
-          onDuration={(value: number) => {
-            setDuration(value);
-            updatePlaybackMeta({ url: current.url, durationSeconds: value });
-          }}
-          onReady={() => {
-            updatePlaybackMeta({
-              url: current.url,
-              title: current.title,
-              thumbnail: current.thumbnail,
-              sourceLabel: current.sourceLabel
-            });
-            updateTracks();
-          }}
-          onClickPreview={() => setPlaying(true)}
-          config={{
-            file: {
-              attributes: {
-                preload: "auto",
-                poster: current.thumbnail || undefined,
-                controlsList: "nodownload noplaybackrate",
-                crossOrigin: "anonymous"
-              },
-              hlsOptions: { maxBufferLength: 60, maxMaxBufferLength: 90, backBufferLength: 50 }
-            }
-          }}
-        />
+        {isTranscoded ? (
+          <video
+            ref={nativeVideoRef}
+            className="w-full h-full object-contain absolute inset-0"
+            playsInline
+            onPlay={handleNativePlay}
+            onPause={handleNativePause}
+            onTimeUpdate={handleNativeTimeUpdate}
+            onLoadedMetadata={handleNativeLoadedMetadata}
+            onWaiting={() => setIsBuffering(true)}
+            onPlaying={() => setIsBuffering(false)}
+            crossOrigin="anonymous"
+            poster={current.thumbnail || undefined}
+          />
+        ) : (
+          <ReactPlayer
+            ref={playerRef}
+            url={current.url}
+            playing={current.playing}
+            muted={muted}
+            volume={volume}
+            playbackRate={current.speed}
+            width="100%"
+            height="100%"
+            style={{ position: "absolute", inset: 0 }}
+            onPlay={() => {
+              setPlaying(true);
+              updateTracks();
+            }}
+            onPause={() => setPlaying(false)}
+            onProgress={handleProgress}
+            onDuration={(value: number) => {
+              setDuration(value);
+              updatePlaybackMeta({ url: current.url, durationSeconds: value });
+            }}
+            onReady={() => {
+              updatePlaybackMeta({
+                url: current.url,
+                title: current.title,
+                thumbnail: current.thumbnail,
+                sourceLabel: current.sourceLabel
+              });
+              updateTracks();
+            }}
+            onClickPreview={() => setPlaying(true)}
+            config={{
+              file: {
+                attributes: {
+                  preload: "auto",
+                  poster: current.thumbnail || undefined,
+                  controlsList: "nodownload noplaybackrate",
+                  crossOrigin: "anonymous"
+                },
+                hlsOptions: { maxBufferLength: 60, maxMaxBufferLength: 90, backBufferLength: 50 }
+              }
+            }}
+          />
+        )}
       </div>
+
+      {isBuffering && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-all duration-300">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-12 w-12 rounded-full border-4 border-cyan-400/20 border-t-cyan-400 animate-spin" />
+            <span className="text-cyan-400 text-sm font-medium tracking-wider drop-shadow-md">Buffering Stream...</span>
+          </div>
+        </div>
+      )}
+
+      {mseError && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/85 backdrop-blur-md transition-all duration-300">
+          <div className="flex flex-col items-center gap-3 max-w-md text-center p-6 border border-white/10 rounded-2xl bg-black">
+            <span className="text-red-500 text-lg font-semibold tracking-wide drop-shadow-md">Playback Error</span>
+            <span className="text-slate-400 text-sm">{mseError}</span>
+            <button
+              onClick={() => initMse(played * duration)}
+              className="mt-2 px-4 py-2 bg-cyan-500 hover:bg-cyan-600 active:bg-cyan-700 text-black text-sm font-semibold rounded-lg transition"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Top Bar for Go Back */}
       <div 
@@ -686,7 +726,12 @@ export function VideoPlayer() {
             onChange={(e) => {
               const next = Number(e.target.value);
               setPlayed(next);
-              playerRef.current?.seekTo?.(next, "fraction");
+              if (isTranscoded) {
+                const targetTime = next * duration;
+                handleNativeSeek(targetTime);
+              } else {
+                playerRef.current?.seekTo?.(next, "fraction");
+              }
             }} 
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
           />
