@@ -1,6 +1,6 @@
 {
-  "/api/check-url/route": "app/api/check-url/route.js",
-  "/api/transcode/route": "app/api/transcode/route.js",
   "/_not-found/page": "app/_not-found/page.js",
+  "/api/transcode/route": "app/api/transcode/route.js",
+  "/api/check-url/route": "app/api/check-url/route.js",
   "/page": "app/page.js"
 }
