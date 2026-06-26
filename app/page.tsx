@@ -38,14 +38,14 @@ export default function Page() {
           title: "Server not responsive",
           description: "The video server did not respond or did not return a valid video stream.",
           tone: "error"
-          
+        });
         return;
-        }
+      }
 
       const result = openVideo(url);
-        if (!result.ok) {
-          pushToast({ title: "Invalid link", description: result.message, tone: "error" });
-        }
+      if (!result.ok) {
+        pushToast({ title: "Invalid link", description: result.message, tone: "error" });
+      }
       } catch {
         pushToast({
           title: "Server not responsive",
