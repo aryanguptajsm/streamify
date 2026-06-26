@@ -1,6 +1,16 @@
 import { NextResponse } from "next/server";
 import ffmpeg from "fluent-ffmpeg";
+import ffmpegStatic from "ffmpeg-static";
 import { PassThrough } from "stream";
+import { isSafeUrl } from "@/lib/ssrf-server";
+
+// Set FFmpeg binary path statically from ffmpeg-static to ensure it works on all platforms (serverless and local)
+if (ffmpegStatic) {
+  ffmpeg.setFfmpegPath(ffmpegStatic);
+  console.log(`[FFmpeg] Static binary configured successfully: ${ffmpegStatic}`);
+} else {
+  console.warn("[FFmpeg] ffmpeg-static could not resolve a binary path. Falling back to system FFmpeg.");
+}
 
 export async function GET(request: Request) {
   try {
@@ -11,6 +21,12 @@ export async function GET(request: Request) {
 
     if (!url) {
       return new NextResponse("Missing url parameter", { status: 400 });
+    }
+
+    // SSRF protection: Ensure the target URL resolves to a safe, public address
+    const isSafe = await isSafeUrl(url);
+    if (!isSafe) {
+      return new NextResponse("Forbidden: Unsafe or private URL address is not allowed", { status: 403 });
     }
 
     // PassThrough stream to capture FFmpeg output
