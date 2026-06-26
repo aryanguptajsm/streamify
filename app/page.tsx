@@ -9,8 +9,8 @@ import { PlaySquare } from "lucide-react";
 import { isPublicMediaUrl } from "@/lib/media";
 
 const samples = [
-  { label: "Sample A", url: "https://www.w3schools.com/html/mov_bbb.mp4" },
-  { label: "Sample B", url: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" }
+  { label: "Sample A", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" },
+  { label: "Sample B", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" }
 ];
 
 export default function Page() {
@@ -38,44 +38,44 @@ export default function Page() {
           title: "Server not responsive",
           description: "The video server did not respond or did not return a valid video stream.",
           tone: "error"
-        });
+          
         return;
-      }
+        }
 
       const result = openVideo(url);
-      if (!result.ok) {
-        pushToast({ title: "Invalid link", description: result.message, tone: "error" });
+        if (!result.ok) {
+          pushToast({ title: "Invalid link", description: result.message, tone: "error" });
+        }
+      } catch {
+        pushToast({
+          title: "Server not responsive",
+          description: "Failed to connect to the video host.",
+          tone: "error"
+        });
+      } finally {
+        setIsValidating(false);
       }
-    } catch {
-      pushToast({
-        title: "Server not responsive",
-        description: "Failed to connect to the video host.",
-        tone: "error"
-      });
-    } finally {
-      setIsValidating(false);
+    };
+
+    if (current.url) {
+      return <VideoPlayer />;
     }
-  };
 
-  if (current.url) {
-    return <VideoPlayer />;
+    return (
+      <div className="w-full max-w-2xl mx-auto p-4 sm:p-6 lg:p-8 flex flex-col items-center text-center">
+        <div className="flex h-20 w-20 items-center justify-center rounded-[32px] bg-gradient-to-br from-cyan-400/20 via-sky-500/20 to-indigo-600/20 text-cyan-400 mb-8 shadow-soft">
+          <PlaySquare className="h-10 w-10" />
+        </div>
+        <h1 className="font-display text-4xl sm:text-5xl font-semibold text-white tracking-tight mb-4">
+          Streamify
+        </h1>
+        <p className="text-slate-400 text-lg mb-10 max-w-lg">
+          Paste a public media URL to start a premium, distraction-free viewing experience.
+        </p>
+
+        <div className="w-full text-left">
+          <UrlForm onSubmit={handleOpen} onDropUrl={handleOpen} samples={samples} disabled={isValidating} />
+        </div>
+      </div>
+    );
   }
-
-  return (
-    <div className="w-full max-w-2xl mx-auto p-4 sm:p-6 lg:p-8 flex flex-col items-center text-center">
-      <div className="flex h-20 w-20 items-center justify-center rounded-[32px] bg-gradient-to-br from-cyan-400/20 via-sky-500/20 to-indigo-600/20 text-cyan-400 mb-8 shadow-soft">
-        <PlaySquare className="h-10 w-10" />
-      </div>
-      <h1 className="font-display text-4xl sm:text-5xl font-semibold text-white tracking-tight mb-4">
-        Streamify
-      </h1>
-      <p className="text-slate-400 text-lg mb-10 max-w-lg">
-        Paste a public media URL to start a premium, distraction-free viewing experience.
-      </p>
-      
-      <div className="w-full text-left">
-        <UrlForm onSubmit={handleOpen} onDropUrl={handleOpen} samples={samples} disabled={isValidating} />
-      </div>
-    </div>
-  );
-}

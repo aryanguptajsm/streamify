@@ -72,7 +72,7 @@ export async function POST(request: Request) {
     const timeoutId = setTimeout(() => controller.abort(), 3500); // Optimized timeout from 6s to 3.5s
 
     try {
-      let response: Response;
+      let response!: Response;
       let usedHead = true;
 
       // Try HEAD request first for high performance (downloads zero body bytes)
