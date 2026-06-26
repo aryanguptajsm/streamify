@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  serverExternalPackages: ["ffmpeg-static", "fluent-ffmpeg"],
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "img.youtube.com" },
