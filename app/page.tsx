@@ -9,8 +9,8 @@ import { PlaySquare } from "lucide-react";
 import { isPublicMediaUrl } from "@/lib/media";
 
 const samples = [
-  { label: "Sample A", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" },
-  { label: "Sample B", url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" }
+  { label: "Sample A", url: "https://media.w3.org/2010/05/bunny/trailer.mp4" },
+  { label: "Sample B", url: "https://media.w3.org/2010/05/sintel/trailer_hd.mp4" }
 ];
 
 export default function Page() {
