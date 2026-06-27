@@ -1,0 +1,6 @@
+{
+  "/api/check-url/route": "/api/check-url",
+  "/api/transcode/route": "/api/transcode",
+  "/_not-found/page": "/_not-found",
+  "/page": "/"
+}
